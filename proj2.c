@@ -25,6 +25,7 @@ typedef enum {PROGRAM, LOCKED} states;
 states state = RELEASED;
 uint8_t savedState = 0;
 uint8_t input = 0;
+uint16_t sinceLastButtonPress =0;
 int inputCount = 0;
 
 
@@ -47,6 +48,7 @@ ISR(TIMER0_COMPA_vect){
     PORTB = 0b100;
   }
   count +=1;
+  sinceLastButtonPress +=1;
 }
 //blink the led three times
 void flashYellow(){
@@ -84,6 +86,14 @@ void setState(){
       inputCount +=1;
   }
   key1Prev = key1;
+  //has timed out BONUS wooo ...EZ
+  if(sinceLastButtonPress>1000 && inputCount>0){
+    input = 0;
+    inputCount = 0;
+    sinceLastButtonPress = 0;
+    flashYellow();
+  }
+
   //this means we have 6 inputs
   //state only changes at the end of 6 bits being enterd
   if(inputCount != 0 && inputCount % 6 ==0 ){
@@ -134,18 +144,27 @@ int main(){
   uint8_t historyK0 = 0;
   uint8_t historyK1 = 0;
   sei();
+  sinceLastButtonPress = 0;
   while(1){
     historyK0 = historyK0 <<1;
     if((PINB & KEY0) == 0) historyK0 = historyK0 | 0x1;
-    if ((historyK0 & 0b111111) == 0b111111) key0 = PRESSED;
+    if ((historyK0 & 0b111111) == 0b111111){
+       key0 = PRESSED;
+       sinceLastButtonPress = 0;
+    }
     else key0 = RELEASED;
 
     historyK1 = historyK1 <<1;
     if((PINB & KEY1) == 0) historyK1 = historyK1 | 0x1;
-    if ((historyK1 & 0b111111) == 0b111111) key1 = PRESSED;
+    if ((historyK1 & 0b111111) == 0b111111){
+       key1 = PRESSED;
+       sinceLastButtonPress = 0;
+    }
     else key1 = RELEASED;
     setState();
     adjustMask();
+
+
   }
 
 
